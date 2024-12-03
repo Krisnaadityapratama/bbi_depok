@@ -1,17 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Landing Page - ThingSpeak Data</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Monitoring Kolam Ikan - BBI Depok</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 90%;
+            margin: auto;
+        }
+        .chart-container {
+            width: 30%;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+        }
+        h3 {
+            text-align: center;
+        }
+        .no-data {
+            font-style: italic;
+            color: gray;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>ThingSpeak Data Visualization</h1>
-    <canvas id="thingSpeakChart" width="800" height="400"></canvas>
-  </div>
-  <script src="script.js"></script>
+    <h1 style="text-align: center;">Monitoring Data Kolam Ikan - BBI Depok</h1>
+
+    <div class="container" id="charts-container">
+        <!-- Grafik per ID alat akan dimasukkan di sini -->
+    </div>
+
+    <script>
+        // Fungsi untuk mengonversi waktu UTC ke waktu lokal (WIB)
+        function convertUTCToLocal(utcDate) {
+            const date = new Date(utcDate);
+            const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false, timeZone: 'Asia/Jakarta' };
+            return date.toLocaleString('en-US', options);
+        }
+
+        // Array ID alat yang diharapkan (misalnya, jika Anda tahu ID alat tertentu)
+        const expectedIDs = ['1', '2', '3']; // Ganti dengan daftar ID alat yang Anda miliki
+
+        // Ambil data dari API ThingSpeak
+        fetch('https://api.thingspeak.com/channels/2769816/feeds.json?api_key=WTIFG3EJDHG0BRKF&results=10')
+            .then(response => response.json())
+            .then(data => {
+                console.log("Data from ThingSpeak: ", data);
+
+                // Proses data yang diperlukan
+                const feeds = data.feeds || [];
+
+                // Kelompokkan data berdasarkan ID
+                const groupedData = {};
+                feeds.forEach(feed => {
+                    const id = feed.field5; // ID per alat
+                    if (!groupedData[id]) {
+                        groupedData[id] = {
+                            labels: [],
+                            ph: [],
+                            do: [],
+                            t: [],
+                            v: []
+                        };
+                    }
+                    // Masukkan data per ID
+                    groupedData[id].labels.push(convertUTCToLocal(feed.created_at));  // Konversi waktu ke WIB
+                    groupedData[id].ph.push(parseFloat(feed.field1) || null);
+                    groupedData[id].do.push(parseFloat(feed.field2) || null);
+                    groupedData[id].t.push(parseFloat(feed.field3) || null);
+                    groupedData[id].v.push(parseFloat(feed.field4) || null);
+                });
+
+                // Buat grafik untuk setiap ID (termasuk yang tidak ada datanya)
+                expectedIDs.forEach(id => {
+                    const data = groupedData[id] || { labels: [], ph: [], do: [], t: [], v: [] };
+                    const chartContainer = document.createElement('div');
+                    chartContainer.classList.add('chart-container');
+
+                    const chartTitle = document.createElement('h3');
+                    chartTitle.innerText = `Alat ID: ${id}`;
+                    chartContainer.appendChild(chartTitle);
+
+                    const canvas = document.createElement('canvas');
+                    chartContainer.appendChild(canvas);
+                    document.getElementById('charts-container').appendChild(chartContainer);
+
+                    // Jika data kosong, tampilkan pesan "Data tidak tersedia"
+                    if (data.labels.length === 0) {
+                        const noDataMessage = document.createElement('p');
+                        noDataMessage.classList.add('no-data');
+                        noDataMessage.innerText = 'Data tidak tersedia';
+                        chartContainer.appendChild(noDataMessage);
+                    } else {
+                        // Konfigurasi grafik menggunakan Chart.js
+                        const ctx = canvas.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.labels, // Waktu sebagai label (sudah dikonversi ke WIB)
+                                datasets: [
+                                    {
+                                        label: 'PH',
+                                        data: data.ph,
+                                        borderColor: 'red',
+                                        fill: false
+                                    },
+                                    {
+                                        label: 'DO',
+                                        data: data.do,
+                                        borderColor: 'blue',
+                                        fill: false
+                                    },
+                                    {
+                                        label: 'Temperature (°C)',
+                                        data: data.t,
+                                        borderColor: 'green',
+                                        fill: false
+                                    },
+                                    {
+                                        label: 'Voltage (V)',
+                                        data: data.v,
+                                        borderColor: 'orange',
+                                        fill: false
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    x: {
+                                        type: 'category',
+                                        labels: data.labels
+                                    },
+                                    y: {
+                                        beginAtZero: false
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching data: ', error);
+            });
+    </script>
 </body>
 </html>
