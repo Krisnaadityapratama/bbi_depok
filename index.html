@@ -101,6 +101,33 @@
             font-size: 0.9em;
         }
 
+        .whatsapp-float {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #25d366;
+        color: #fff;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        transition: transform 0.3s ease;
+    }
+
+    .whatsapp-float:hover {
+        transform: scale(1.1);
+    }
+
+    .whatsapp-float img {
+        width: 60px;
+        height: 60px;
+    }
+
+
         footer {
             text-align: center;
             background-color: #222;
@@ -127,6 +154,9 @@
         </div>
     </header>
     <div class="container" id="charts-container"></div>
+    <a href="https://wa.me/6281808404889" class="whatsapp-float" target="_blank">
+        <img src="whatsapp-icon.png" alt="Chat WhatsApp">
+    </a>    
     <footer>
         &copy; 2024 UPTD Balai Benih Ikan Kota Depok. All Rights Reserved.
     </footer>
