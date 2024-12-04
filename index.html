@@ -3,68 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Monitoring Kolam Ikan - BBI Depok</title>
+    <link rel="icon" href="kota-depok-seeklogo.png" type="image/png">
+    <title>BBI Depok - IoT</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
+        /* Styling untuk Navbar */
+        .navbar {
+            background-color: #021038;
+            padding: 10px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .navbar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .navbar a:hover {
+            background-color: #ff9800;
+        }
+
+        header {
+            text-align: center;
+            background-color: #021038;
+            padding: 20px 10px;
+        }
+
+        header img {
+            max-width: 100px;
+        }
+
+        header h1, header h2 {
+            margin: 5px 0;
+            color: #fff;
+        }
+
         .container {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            width: 90%;
-            margin: auto;
+            flex-direction: column;
+            width: 100%;
+            margin: 20px auto;
+            align-items: center;
         }
+
         .chart-container {
-            width: 30%;
-            margin-bottom: 20px;
+            width: 90%;
+            max-width: 1000px;
+            margin-bottom: 30px;
             text-align: center;
         }
+
         canvas {
             width: 100%;
             height: auto;
         }
+
         h3 {
             text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 10px;
         }
+
         .no-data {
             font-style: italic;
             color: gray;
         }
+
+        .latest-data {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        footer {
+            text-align: center;
+            background-color: #222;
+            color: #fff;
+            padding: 10px 0;
+            margin-top: auto;
+        }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center;">Monitoring Data Kolam Ikan - BBI Depok</h1>
-
-    <div class="container" id="charts-container">
-        <!-- Grafik per ID alat akan dimasukkan di sini -->
-    </div>
-
+    <header>
+        <div class="header-container">
+            <nav class="navbar">
+                <ul>
+                    <li><a href="/index.html">Monitoring</a></li>
+                    <li><a href="/gallery.html">Galeri Ikan</a></li>
+                </ul>
+            </nav>
+            <div class="logo">
+                <img src="kota-depok-seeklogo.png" alt="Logo UPTD BBI Depok">
+                <h1>UPTD Balai Benih Ikan Kota Depok</h1>
+                <h2>Monitoring Kualitas Air Kolam Ikan</h2>
+            </div>
+        </div>
+    </header>
+    <div class="container" id="charts-container"></div>
+    <footer>
+        &copy; 2024 UPTD Balai Benih Ikan Kota Depok. All Rights Reserved.
+    </footer>
     <script>
-        // Fungsi untuk mengonversi waktu UTC ke waktu lokal (WIB)
         function convertUTCToLocal(utcDate) {
             const date = new Date(utcDate);
-            const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false, timeZone: 'Asia/Jakarta' };
+            const options = { hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false, timeZone: 'Asia/Jakarta' };
             return date.toLocaleString('en-US', options);
         }
 
-        // Array ID alat yang diharapkan (misalnya, jika Anda tahu ID alat tertentu)
-        const expectedIDs = ['1', '2', '3']; // Ganti dengan daftar ID alat yang Anda miliki
+        const expectedIDs = ['1', '2', '3'];
 
-        // Ambil data dari API ThingSpeak
         fetch('https://api.thingspeak.com/channels/2769816/feeds.json?api_key=WTIFG3EJDHG0BRKF&results=10')
             .then(response => response.json())
             .then(data => {
-                console.log("Data from ThingSpeak: ", data);
-
-                // Proses data yang diperlukan
                 const feeds = data.feeds || [];
 
-                // Kelompokkan data berdasarkan ID
                 const groupedData = {};
                 feeds.forEach(feed => {
-                    const id = feed.field5; // ID per alat
+                    const id = feed.field5;
                     if (!groupedData[id]) {
                         groupedData[id] = {
                             labels: [],
@@ -74,15 +156,13 @@
                             v: []
                         };
                     }
-                    // Masukkan data per ID
-                    groupedData[id].labels.push(convertUTCToLocal(feed.created_at));  // Konversi waktu ke WIB
+                    groupedData[id].labels.push(convertUTCToLocal(feed.created_at));
                     groupedData[id].ph.push(parseFloat(feed.field1) || null);
                     groupedData[id].do.push(parseFloat(feed.field2) || null);
                     groupedData[id].t.push(parseFloat(feed.field3) || null);
                     groupedData[id].v.push(parseFloat(feed.field4) || null);
                 });
 
-                // Buat grafik untuk setiap ID (termasuk yang tidak ada datanya)
                 expectedIDs.forEach(id => {
                     const data = groupedData[id] || { labels: [], ph: [], do: [], t: [], v: [] };
                     const chartContainer = document.createElement('div');
@@ -96,65 +176,47 @@
                     chartContainer.appendChild(canvas);
                     document.getElementById('charts-container').appendChild(chartContainer);
 
-                    // Jika data kosong, tampilkan pesan "Data tidak tersedia"
                     if (data.labels.length === 0) {
                         const noDataMessage = document.createElement('p');
                         noDataMessage.classList.add('no-data');
                         noDataMessage.innerText = 'Data tidak tersedia';
                         chartContainer.appendChild(noDataMessage);
                     } else {
-                        // Konfigurasi grafik menggunakan Chart.js
                         const ctx = canvas.getContext('2d');
                         new Chart(ctx, {
                             type: 'line',
                             data: {
-                                labels: data.labels, // Waktu sebagai label (sudah dikonversi ke WIB)
+                                labels: data.labels,
                                 datasets: [
-                                    {
-                                        label: 'PH',
-                                        data: data.ph,
-                                        borderColor: 'red',
-                                        fill: false
-                                    },
-                                    {
-                                        label: 'DO',
-                                        data: data.do,
-                                        borderColor: 'blue',
-                                        fill: false
-                                    },
-                                    {
-                                        label: 'Temperature (°C)',
-                                        data: data.t,
-                                        borderColor: 'green',
-                                        fill: false
-                                    },
-                                    {
-                                        label: 'Voltage (V)',
-                                        data: data.v,
-                                        borderColor: 'orange',
-                                        fill: false
-                                    }
+                                    { label: 'PH', data: data.ph, borderColor: 'red', fill: false },
+                                    { label: 'DO', data: data.do, borderColor: 'blue', fill: false },
+                                    { label: 'Temperature (°C)', data: data.t, borderColor: 'green', fill: false },
+                                    { label: 'Voltage (V)', data: data.v, borderColor: 'orange', fill: false }
                                 ]
                             },
                             options: {
                                 responsive: true,
                                 scales: {
-                                    x: {
-                                        type: 'category',
-                                        labels: data.labels
-                                    },
-                                    y: {
-                                        beginAtZero: false
-                                    }
+                                    x: { type: 'category' },
+                                    y: { beginAtZero: false }
                                 }
                             }
                         });
+
+                        const latestData = document.createElement('div');
+                        latestData.classList.add('latest-data');
+                        const latestIndex = data.labels.length - 1;
+                        latestData.innerHTML = `
+                            <p><strong>PH:</strong> ${data.ph[latestIndex] || 'N/A'}</p>
+                            <p><strong>DO:</strong> ${data.do[latestIndex] || 'N/A'}</p>
+                            <p><strong>Temperature (°C):</strong> ${data.t[latestIndex] || 'N/A'}</p>
+                            <p><strong>Voltage (V):</strong> ${data.v[latestIndex] || 'N/A'}</p>
+                        `;
+                        chartContainer.appendChild(latestData);
                     }
                 });
             })
-            .catch(error => {
-                console.error('Error fetching data: ', error);
-            });
+            .catch(error => console.error('Error fetching data: ', error));
     </script>
 </body>
 </html>
